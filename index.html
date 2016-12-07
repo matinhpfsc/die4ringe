@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>Die vier Schl&uuml;ssel</title>
+   </head>
+   <body onLoad="init();">
+     <script>
+
+         var commands = [
+            {
+               pattern: /say\s+"([^"]*)"(\s+in\s+(#[0-9A-F]{6}))?/g,
+               func: function(groups) {say(groups[3], groups[1]);}
+            }
+         ];
+
+         function createTextReader(text) {
+            var currentIndex = 0;
+            var lines = text.replace(/\r/g, "").split("\n");
+
+            return {
+               currentLine: function() {
+                  return currentIndex < lines.length ? lines[currentIndex] : null;
+               },
+               nextLine: function() {
+                  if (currentIndex < lines.length) currentIndex++;
+               },
+               lastLine: function() {
+                  if (currentIndex > 0) currentIndex--;
+               },
+            };
+         }
+
+         function getStatement(reader) {
+            var line = reader.currentLine(); 
+            var result;
+            for (command of commands) {
+               result = line.match(command.pattern);
+               if (result != null) {
+                  return function() { command.func(result) };
+               }
+            }
+            return null;
+         }
+
+
+         function getIndentLevel(line) {
+            if (line == null) {
+               return -1;
+            }
+            var regex = /^\s*/g;
+            var indent = regex.exec(line);
+            if (indent == null) {
+               return 0;
+            }
+            return indent[0].length;
+         }
+
+         function getBlockStatements(reader) {
+            var statements = [];
+            if (reader.currentLine() == null) {
+               return statements;
+            }
+            var indentLevel = getIndentLevel(reader.currentLine());
+            while (indentLevel <= getIndentLevel(reader.currentLine())) {
+               statements.push(getStatement(reader));
+               reader.nextLine();
+            }
+            return statements;
+         }
+
+         function init() {
+            var text = 'say "Hallo, wie gehts."\nsay "Genau so gehts." in #FF0000';
+            var reader = createTextReader(text);
+            var statements = getBlockStatements(reader);
+  /*          var statements = [
+               'say "Dies ist meine erste Aussage."',
+               'say "Und dies ist meine zweite."'
+            ];
+            var dialogDiv =  document.getElementById('dialog');
+            for (var i = 0; i < statements.length; i++) {
+               
+            }
+            dialogDiv.innerHTML = 'Hallo wie gehts';*/
+         }
+/*
+         function run(statements) {
+            for (var i = 0; i < statements.length; i++) {
+               statements[i].run();
+            }
+         }
+
+         function condition(branches) {
+            for (var i = 0; i < branches.length; i++) {
+               var branch = branches[i];
+               if (branch.checkFunction(branch.firstArgument,
+                        branch.secondArgument)) {
+                  run(branch.statements);
+                  return;
+               }
+            }
+         }
+      */
+         function say(color, text) {
+            //Assert: parameters.length >= 1 && parameters.length <= 2
+            //Assert: parameters[0] is string, parameters[1] is color 
+         }
+         
+      </script>
+      <div id="dialog"></div>
+  </body>
+</html>
