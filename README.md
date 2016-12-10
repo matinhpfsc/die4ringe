@@ -1,2 +1,2 @@
-# die4ringe
+# Die vier Schlüssel
 A german text adventure
