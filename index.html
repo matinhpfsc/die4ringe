@@ -69,10 +69,27 @@
             return statements;
          }
 
+         var texts = ["Ich bin Peter Kowalskie ein mächtiger Sänger.", "Naja, eigentlich möchte ich U-Boot fahren.", "Wissen Sie, wie man von hier zum Hafen kommt?"
+         ];
+         var index = 0;
+
+         function nextStep() {
+            var dialogDiv =  document.getElementById('dialog');
+            if (index < texts.length) {
+               dialogDiv.innerHTML = texts[index];
+               setTimeout(function() { dialogDiv.innerHTML = ""; nextStep() }, 25 * texts[index].length + 2000);
+               index++;
+            }
+         }
+
          function init() {
             var text = 'say "Hallo, wie gehts."\nsay "Genau so gehts." in #FF0000';
             var reader = createTextReader(text);
             var statements = getBlockStatements(reader);
+            //var dialogDiv =  document.getElementById('dialog');
+            //dialogDiv.innerHTML = 'Hallo wie gehts';
+            //setTimeout(nextStep, 3000);
+            nextStep();
   /*          var statements = [
                'say "Dies ist meine erste Aussage."',
                'say "Und dies ist meine zweite."'
@@ -107,17 +124,17 @@
          }
          
       </script>
-      <div id="dialog" style="min-height:7em; width:30em; margin:auto;">Ich kann die Dose ohne Dosenöffner nicht öffnen. Da fällt mir folgender Witz ein: Wie nennt man einen Dosenöffner ohne Wasserhahn? Enemene Miste was rappelt in der Kiste? Ich weiß es nicht.</div>
+      <div id="dialog" style="min-height:7em; width:30em; margin:auto;"><!--Ich kann die Dose ohne Dosenöffner nicht öffnen. Da fällt mir folgender Witz ein: Wie nennt man einen Dosenöffner ohne Wasserhahn? Enemene Miste was rappelt in der Kiste? Ich weiß es nicht.--></div>
       <div id="room" style="border-style:solid; width:30em; margin:auto;">In einer Ecke steht eine kleine Miniküche mit <a href="">Kochfeld</a>, <a href="">Spüle</a> und <a href="">Kühlschrank</a>. In der Ecke gegenüber steht ein Küchenschrank mit <a href="">Besteck</a>-|Besteckschublade_ und <a href="">Zubehörschublade</a> sowie einem <a href="">Regal</a> für Gläser und Tassen und einem <a href="">Geschirrfach</a>. In der Mitte steht ein <a href="">Tisch</a> mit Stühlen.</div>
       <div id="command" style="margin:1em; text-align:center;">Benutze Tür mit Schlüssel</div>
-      <div style="width:30em; margin:auto;">
+      <div style="width:40em; margin:auto;">
       <table style="width:20em; float:left;">
          <tr><td><a href="">Nimm</a></td><td><a href="">Öffne</a></td><td><a href="">Ziehe</a></td></tr>
          <tr><td><a href="">Gib</a></td><td><a href="">Schließe</a></td><td><a href="">Drücke</a></td></tr>
          <tr><td><a href="">Rede mit</a></td><td><a href="">Schau an</a></td><td><a href="">Benutze</a></td></tr>
       </table>
       <div>
-      <div style="overflow:auto; height:6em;">Das Inventar<br/>Schere<br/> Paket<br/> Schlüssel<br/> Ring<br/> Tanzschuh</div></div>
+      <div style="overflow:auto; height:6em;"><br/><a href="">Schere</a><br/><a href="">Paket</a><br/><a href="">Schlüssel</a><br/><a href="">Ring</a><br/><a href="">Tanzschuh</a><br/><a href="">roter Fisch</a><br/><a href="">ein kleines Etwas mit einem Nagel drin</a></div></div>
       </div>
    </body>
 </html>
