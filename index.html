@@ -69,16 +69,32 @@
             return statements;
          }
 
-         var steps = [function() { print("Ich bin Peter Kowalskie, ein mächtiger Sänger.");},
-                      function() { print("Naja, eigentlich möchte ich U-Boot fahren.");},
-                      function() { print("Oder ich werde ein singendes, tanzendes, klirrendes Etwas, das eine Mütze auf hat.");},
-                      function() { print("Wissen Sie, wie man von hier zum Hafen kommt?");}];
+         //var inventory = ["Schere", "Paket", "Schlüssel", "Ring", "Tanzschuh", "roter Fisch", "ein kleines Etwas mit einem Nagel drin"];
+         var inventory = [];
+
+
+         var steps = [function() { print("Ich bin Peter Kowalskie, ein mächtiger Seeräuber.");},
+                      function() { print("Oh...sieh' mal an! Eine Schatztruhe!");},
+                      function() { inventory.push("Schatztruhe"); setInventory(); nextStep();},
+                      function() { print("Da wollen wir doch gleich mal sehen, was da drinnen ist.");},
+                      function() { print("Ahh, eine Flasche Brause, eine Brille und ein Fisch.");},
+                      function() { inventory.push("Brauseflasche");
+                                   inventory.push("Brille");
+                                   inventory.push("roter Fisch");
+                                   setInventory(); nextStep();},
+                      function() { print("Die leere Truhe brauche ich ja dann nicht mehr");},
+                      function() { inventory.splice(inventory.indexOf("Schatztruhe"), 1); setInventory(); nextStep();}];
          var index = 0;
 
          function print(text) {
             var dialogDiv =  document.getElementById('dialog');
             dialogDiv.innerHTML = text;
             setTimeout(function() { dialogDiv.innerHTML = ""; nextStep() }, 25 * text.length + 2000);
+         }
+
+         function setInventory() {
+             var inventoryDiv = document.getElementById('inventory');
+             inventoryDiv.innerHTML = inventory.map(function(s) { return '<a href="">' + s + '</a>';}).join("<br/>");
          }
 
          function nextStep() {
@@ -93,7 +109,8 @@
             var text = 'say "Hallo, wie gehts."\nsay "Genau so gehts." in #FF0000';
             var reader = createTextReader(text);
             var statements = getBlockStatements(reader);
-           nextStep();
+            setInventory();
+            nextStep();
         }
 /*
          function run(statements) {
@@ -125,7 +142,7 @@
          <tr><td><a href="">Rede mit</a></td><td><a href="">Schau an</a></td><td><a href="">Benutze</a></td></tr>
       </table>
       <div>
-      <div style="overflow:auto; height:6em;"><br/><a href="">Schere</a><br/><a href="">Paket</a><br/><a href="">Schlüssel</a><br/><a href="">Ring</a><br/><a href="">Tanzschuh</a><br/><a href="">roter Fisch</a><br/><a href="">ein kleines Etwas mit einem Nagel drin</a></div></div>
+      <div id="inventory" style="overflow:auto; height:6em;"></div></div>
       </div>
    </body>
 </html>
