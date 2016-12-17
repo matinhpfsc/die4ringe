@@ -6,7 +6,7 @@
    </head>
    <body onLoad="init();">
      <style>
-         .verb {
+         .verb, .object {
             cursor:pointer;
          }
      </style>
@@ -74,23 +74,37 @@
             return statements;
          }
 
+         var commandRules = {
+            "Schau an": {
+               "Kühlschrank": [
+                  function() { print("Dies ist ein cooler Kühlschrank.");},
+                  function() { print("Ok, war ein blöder Spruch.")}
+               ]
+            },
+            "Rede mit": {
+               "Tisch": [
+                  function() { print("Ich bin Peter Kowalsky, ein mächtiger Seeräuber.");},
+                  function() { print("Oh...sieh' mal an! Eine Schatztruhe!");},
+                  function() { inventory.push("Schatztruhe"); setInventory(); nextStep();},
+                  function() { wait(1); },
+                  function() { print("Da wollen wir doch gleich mal sehen, was da drinnen ist.");},
+                  function() { print("Ahh, eine Flasche Brause, eine Brille und ein Fisch.");},
+                  function() { inventory.push("Brauseflasche");
+                               inventory.push("Brille");
+                               inventory.push("roter Fisch");
+                               setInventory(); nextStep();},
+                  function() { wait(1); },
+                  function() { print("Die leere Truhe brauche ich ja dann nicht mehr");},
+                  function() { inventory.splice(inventory.indexOf("Schatztruhe"), 1); setInventory(); nextStep();}
+               ]
+            }
+         };
+
          //var inventory = ["Schere", "Paket", "Schlüssel", "Ring", "Tanzschuh", "roter Fisch", "ein kleines Etwas mit einem Nagel drin"];
          var inventory = [];
+         var commandParts = ["Gehe zu"];
 
-
-         var steps = [function() { print("Ich bin Peter Kowalsky, ein mächtiger Seeräuber.");},
-                      function() { print("Oh...sieh' mal an! Eine Schatztruhe!");},
-                      function() { inventory.push("Schatztruhe"); setInventory(); nextStep();},
-                      function() { wait(1); },
-                      function() { print("Da wollen wir doch gleich mal sehen, was da drinnen ist.");},
-                      function() { print("Ahh, eine Flasche Brause, eine Brille und ein Fisch.");},
-                      function() { inventory.push("Brauseflasche");
-                                   inventory.push("Brille");
-                                   inventory.push("roter Fisch");
-                                   setInventory(); nextStep();},
-                      function() { wait(1); },
-                      function() { print("Die leere Truhe brauche ich ja dann nicht mehr");},
-                      function() { inventory.splice(inventory.indexOf("Schatztruhe"), 1); setInventory(); nextStep();}];
+         var steps = [];
          var index = 0;
 
          function wait(seconds) {
@@ -121,16 +135,50 @@
             for (var i = 0; i < verbDivs.length; i++) {
                verbDivs[i].onclick = function(e) {
                                           var text = this.innerHTML;
-                                          var commandDiv = document.getElementById("command");
-                                          commandDiv.innerHTML = text;
-                                       };
+                                          commandParts = [text];
+                                          setCommand();
+                                      };
             }
-            var text = 'say "Hallo, wie gehts."\nsay "Genau so gehts." in #FF0000';
-            var reader = createTextReader(text);
-            var statements = getBlockStatements(reader);
+            var objectDivs = document.getElementsByClassName("object");
+            for (var i = 0; i < objectDivs.length; i++) {
+               objectDivs[i].onclick = function(e) {
+                                          var text = this.innerHTML;
+                                          commandParts.push(text);
+                                          setCommand();
+                                      };
+            }
             setInventory();
             nextStep();
-        }
+         }
+
+         function setCommand() {
+            var commandDiv = document.getElementById("command");
+            commandDiv.innerHTML = commandParts.join(" ");
+            var d = commandRules;
+            for (commandIndex = 0; commandIndex < commandParts.length; commandIndex++) {
+               if (commandParts[commandIndex] in d) {
+                 d = d[commandParts[commandIndex]];
+                  if (Array.isArray(d)) {
+                     index = 0;
+                     steps = d.concat([function() { commandParts = ["Gehe zu"]; commandDiv.innerHTML = commandParts.join(" "); }]);
+                     nextStep();
+                     break;
+                  }
+               }
+               else {
+                  if ("*" in d) {
+                  }
+                  else {
+                     //Unknown command. Clear command line
+                     commandParts = ["Gehe zu"];
+                     commandDiv.innerHTML = commandParts.join(" ");
+                     break;
+                  }
+                  break;
+               }
+            }
+         }
+
 /*
          function run(statements) {
             for (var i = 0; i < statements.length; i++) {
@@ -152,8 +200,8 @@
         
       </script>
       <div id="dialog" style="min-height:7em; width:30em; margin:auto;"><!--Ich kann die Dose ohne Dosenöffner nicht öffnen. Da fällt mir folgender Witz ein: Wie nennt man einen Dosenöffner ohne Wasserhahn? Enemene Miste was rappelt in der Kiste? Ich weiß es nicht.--></div>
-      <div id="room" style="border-style:solid; width:30em; margin:auto;">In einer Ecke steht eine kleine Miniküche mit <a href="">Kochfeld</a>, <a href="">Spüle</a> und <a href="">Kühlschrank</a>. In der Ecke gegenüber steht ein Küchenschrank mit <a href="">Besteck</a>-|Besteckschublade_ und <a href="">Zubehörschublade</a> sowie einem <a href="">Regal</a> für Gläser und Tassen und einem <a href="">Geschirrfach</a>. In der Mitte steht ein <a href="">Tisch</a> mit Stühlen.</div>
-      <div id="command" style="margin:1em; text-align:center;">Benutze Tür mit Schlüssel</div>
+      <div id="room" style="border-style:solid; width:30em; margin:auto;">In einer Ecke steht eine kleine Miniküche mit <span class="object">Kochfeld</span>, <span class="object">Spüle</span> und <span class="object">Kühlschrank</span>. In der Ecke gegenüber steht ein Küchenschrank mit <span class="object">Besteck</span>-|Besteckschublade_ und <span class="object">Zubehörschublade</span> sowie einem <span class="object">Regal</span> für Gläser und Tassen und einem <span class="object">Geschirrfach</span>. In der Mitte steht ein <span class="object">Tisch</span> mit Stühlen.</div>
+      <div id="command" style="margin:1em; text-align:center;">Gehe zu</div>
       <div style="width:40em; margin:auto;">
       <table style="width:20em; float:left;">
          <tr><td><div class="verb">Nimm</div></td><td><div class="verb">Öffne</div></td><td><div class="verb">Ziehe</div></td></tr>
