@@ -79,7 +79,8 @@
                "Kühlschrank": [
                   function() { print("Dies ist ein cooler Kühlschrank.");},
                   function() { print("Ok, war ein blöder Spruch.")}
-               ]
+               ],
+               "*": [ function() { print("Ich kann nichts besonderes erkennen.") }]
             },
             "Rede mit": {
                "Tisch": [
@@ -151,29 +152,32 @@
             nextStep();
          }
 
+         function clearCommandLine() {
+            commandParts = ["Gehe zu"];
+            var commandDiv = document.getElementById("command");
+            commandDiv.innerHTML = commandParts.join(" ");
+         }
+
          function setCommand() {
             var commandDiv = document.getElementById("command");
             commandDiv.innerHTML = commandParts.join(" ");
             var d = commandRules;
             for (commandIndex = 0; commandIndex < commandParts.length; commandIndex++) {
                if (commandParts[commandIndex] in d) {
-                 d = d[commandParts[commandIndex]];
-                  if (Array.isArray(d)) {
-                     index = 0;
-                     steps = d.concat([function() { commandParts = ["Gehe zu"]; commandDiv.innerHTML = commandParts.join(" "); }]);
-                     nextStep();
-                     break;
-                  }
+                  d = d[commandParts[commandIndex]];
                }
                else {
                   if ("*" in d) {
+                     d = d["*"];
                   }
                   else {
-                     //Unknown command. Clear command line
-                     commandParts = ["Gehe zu"];
-                     commandDiv.innerHTML = commandParts.join(" ");
-                     break;
+                     d = [];
                   }
+               }
+               if (Array.isArray(d)) {
+                  index = 0;
+                  steps = d.concat([clearCommandLine]);
+                  nextStep();
                   break;
                }
             }
