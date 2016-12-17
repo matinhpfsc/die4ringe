@@ -107,6 +107,10 @@
                   }
                },
                "*": [function() { print("Das kann ich nicht benutzen."); } ]
+            },
+            "Gehe zu": {
+               "Tür": [function() { enterRoom("flur"); nextStep(); }],
+               "Küche": [function() { enterRoom("start"); nextStep(); }]
             }
          };
 
@@ -114,6 +118,17 @@
          var commandParts = ["Gehe zu"];
          var steps = [];
          var index = 0;
+
+         var rooms = {
+            "start": "Gegenüber der <span class=\"object\">Tür</span> in einer Ecke steht eine kleine Miniküche mit <span class=\"object\">Kochfeld</span>, "
+                     + "<span class=\"object\">Spüle</span> und <span class=\"object\">Kühlschrank</span>. "
+                     + "In der Ecke gegenüber steht ein Küchenschrank mit "
+                     + "<span class=\"object\">Besteck</span>-|Besteckschublade_ und "
+                     + "<span class=\"object\">Zubehörschublade</span> sowie einem <span class=\"object\">Regal</span> "
+                     + "für Gläser und Tassen und einem <span class=\"object\">Geschirrfach</span>. "
+                     + "In der Mitte steht ein <span class=\"object\">Tisch</span> mit Stühlen.",
+            "flur": "Vom Flur aus gelangt man in die <span class=\"object\">Küche</span>, das <span class=\"object\">Schlafzimmer</span>, das <span class=\"object\">Bad</span> und in eine <span class=\"object\">Abstellkammer</span>."
+         };
 
          function wait(seconds) {
              setTimeout(nextStep, 1000 * seconds);
@@ -147,6 +162,16 @@
                                           setCommand();
                                       };
             }
+            enterRoom("start");
+            setInventory();
+            clearCommandLine();
+            nextStep();
+         }
+
+         function enterRoom(name) {
+            var roomDiv = document.getElementById("room");
+            roomDiv.innerHTML = rooms[name];
+
             var objectDivs = document.getElementsByClassName("object");
             for (var i = 0; i < objectDivs.length; i++) {
                objectDivs[i].onclick = function(e) {
@@ -155,8 +180,6 @@
                                           setCommand();
                                       };
             }
-            setInventory();
-            nextStep();
          }
 
          function clearCommandLine() {
@@ -194,29 +217,10 @@
             return [];
          }
 
-/*
-         function run(statements) {
-            for (var i = 0; i < statements.length; i++) {
-               statements[i].run();
-            }
-         }
-
-         function condition(branches) {
-            for (var i = 0; i < branches.length; i++) {
-               var branch = branches[i];
-               if (branch.checkFunction(branch.firstArgument,
-                        branch.secondArgument)) {
-                  run(branch.statements);
-                  return;
-               }
-            }
-         }
-      */
-        
       </script>
-      <div id="dialog" style="min-height:7em; width:30em; margin:auto;"><!--Ich kann die Dose ohne Dosenöffner nicht öffnen. Da fällt mir folgender Witz ein: Wie nennt man einen Dosenöffner ohne Wasserhahn? Enemene Miste was rappelt in der Kiste? Ich weiß es nicht.--></div>
-      <div id="room" style="border-style:solid; width:30em; margin:auto;">In einer Ecke steht eine kleine Miniküche mit <span class="object">Kochfeld</span>, <span class="object">Spüle</span> und <span class="object">Kühlschrank</span>. In der Ecke gegenüber steht ein Küchenschrank mit <span class="object">Besteck</span>-|Besteckschublade_ und <span class="object">Zubehörschublade</span> sowie einem <span class="object">Regal</span> für Gläser und Tassen und einem <span class="object">Geschirrfach</span>. In der Mitte steht ein <span class="object">Tisch</span> mit Stühlen.</div>
-      <div id="command" style="margin:1em; text-align:center;">Gehe zu</div>
+      <div id="dialog" style="min-height:7em; width:30em; margin:auto;"></div>
+      <div id="room" style="border-style:solid; width:30em; min-height:7em; margin:auto;"></div>
+      <div id="command" style="margin:1em; text-align:center;"></div>
       <div style="width:40em; margin:auto;">
       <table style="width:20em; float:left;">
          <tr><td><div class="verb">Nimm</div></td><td><div class="verb">Öffne</div></td><td><div class="verb">Ziehe</div></td></tr>
