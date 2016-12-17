@@ -5,6 +5,11 @@
       <title>Die vier Schl&uuml;ssel</title>
    </head>
    <body onLoad="init();">
+     <style>
+         .verb {
+            cursor:pointer;
+         }
+     </style>
      <script>
 
          var commands = [
@@ -73,18 +78,24 @@
          var inventory = [];
 
 
-         var steps = [function() { print("Ich bin Peter Kowalskie, ein mächtiger Seeräuber.");},
+         var steps = [function() { print("Ich bin Peter Kowalsky, ein mächtiger Seeräuber.");},
                       function() { print("Oh...sieh' mal an! Eine Schatztruhe!");},
                       function() { inventory.push("Schatztruhe"); setInventory(); nextStep();},
+                      function() { wait(1); },
                       function() { print("Da wollen wir doch gleich mal sehen, was da drinnen ist.");},
                       function() { print("Ahh, eine Flasche Brause, eine Brille und ein Fisch.");},
                       function() { inventory.push("Brauseflasche");
                                    inventory.push("Brille");
                                    inventory.push("roter Fisch");
                                    setInventory(); nextStep();},
+                      function() { wait(1); },
                       function() { print("Die leere Truhe brauche ich ja dann nicht mehr");},
                       function() { inventory.splice(inventory.indexOf("Schatztruhe"), 1); setInventory(); nextStep();}];
          var index = 0;
+
+         function wait(seconds) {
+             setTimeout(nextStep, 1000 * seconds);
+         }
 
          function print(text) {
             var dialogDiv =  document.getElementById('dialog');
@@ -106,6 +117,14 @@
          }
 
          function init() {
+            var verbDivs = document.getElementsByClassName("verb");
+            for (var i = 0; i < verbDivs.length; i++) {
+               verbDivs[i].onclick = function(e) {
+                                          var text = this.innerHTML;
+                                          var commandDiv = document.getElementById("command");
+                                          commandDiv.innerHTML = text;
+                                       };
+            }
             var text = 'say "Hallo, wie gehts."\nsay "Genau so gehts." in #FF0000';
             var reader = createTextReader(text);
             var statements = getBlockStatements(reader);
@@ -137,9 +156,9 @@
       <div id="command" style="margin:1em; text-align:center;">Benutze Tür mit Schlüssel</div>
       <div style="width:40em; margin:auto;">
       <table style="width:20em; float:left;">
-         <tr><td><a href="">Nimm</a></td><td><a href="">Öffne</a></td><td><a href="">Ziehe</a></td></tr>
-         <tr><td><a href="">Gib</a></td><td><a href="">Schließe</a></td><td><a href="">Drücke</a></td></tr>
-         <tr><td><a href="">Rede mit</a></td><td><a href="">Schau an</a></td><td><a href="">Benutze</a></td></tr>
+         <tr><td><div class="verb">Nimm</div></td><td><div class="verb">Öffne</div></td><td><div class="verb">Ziehe</div></td></tr>
+         <tr><td><div class="verb">Gib</div></td><td><div class="verb">Schließe</div></td><td><div class="verb">Drücke</div></td></tr>
+         <tr><td><div class="verb">Rede mit</div></td><td><div class="verb">Schau an</div></td><td><div class="verb">Benutze</div></td></tr>
       </table>
       <div>
       <div id="inventory" style="overflow:auto; height:6em;"></div></div>
