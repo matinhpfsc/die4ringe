@@ -8,10 +8,17 @@
      <style>
          .verb, .object {
             cursor:pointer;
+            font-weight:bold;
          }
      </style>
      <script>
-
+/*
+TODO:
+   - Dialogs,
+   - Removing objects from room,
+   - Adding objects to room,
+   - Inventory selection,
+*/
          var commands = [
             {
                pattern: /say\s+"([^"]*)"(\s+in\s+(#[0-9A-F]{6}))?/g,
@@ -97,7 +104,8 @@
                   function() { wait(1); },
                   function() { print("Die leere Truhe brauche ich ja dann nicht mehr");},
                   function() { inventory.splice(inventory.indexOf("Schatztruhe"), 1); setInventory(); nextStep();}
-               ]
+               ],
+               "*": [ function() { print("Ich glaube nicht, dass das funktioniert."); }]
             },
             "Benutze": {
                "Regal": {
@@ -111,6 +119,22 @@
             "Gehe zu": {
                "Tür": [function() { enterRoom("flur"); nextStep(); }],
                "Küche": [function() { enterRoom("start"); nextStep(); }]
+            },
+            "Ziehe": {
+               "*": [function() { print("Das kann ich nicht bewegen."); } ] 
+            },
+            "Drücke": {
+               "*": [function() { print("Das kann ich nicht bewegen."); } ] 
+            },
+            "Nimm": {
+               "*": [function() { print("Das will ich nicht haben."); } ] 
+            },
+            "Gib": {
+               "*": {
+                  "an": {
+                     "*": [function() { print("Nee."); } ] 
+                  }
+               }
             }
          };
 
@@ -118,16 +142,44 @@
          var commandParts = ["Gehe zu"];
          var steps = [];
          var index = 0;
+         var objectIds;
 
          var rooms = {
-            "start": "Gegenüber der <span class=\"object\">Tür</span> in einer Ecke steht eine kleine Miniküche mit <span class=\"object\">Kochfeld</span>, "
-                     + "<span class=\"object\">Spüle</span> und <span class=\"object\">Kühlschrank</span>. "
+            "start": {
+               "Description":
+                     "In einer Ecke gegenüber der <span id=\"1\" class=\"object\">Tür</span> steht eine kleine Miniküche mit <span id=\"2\" class=\"object\">Kochfeld</span>, "
+                     + "<span id=\"3\" class=\"object\">Spüle</span> und <span id=\"4\" class=\"object\">Kühlschrank</span>. "
                      + "In der Ecke gegenüber steht ein Küchenschrank mit "
-                     + "<span class=\"object\">Besteck</span>-|Besteckschublade_ und "
-                     + "<span class=\"object\">Zubehörschublade</span> sowie einem <span class=\"object\">Regal</span> "
-                     + "für Gläser und Tassen und einem <span class=\"object\">Geschirrfach</span>. "
-                     + "In der Mitte steht ein <span class=\"object\">Tisch</span> mit Stühlen.",
-            "flur": "Vom Flur aus gelangt man in die <span class=\"object\">Küche</span>, das <span class=\"object\">Schlafzimmer</span>, das <span class=\"object\">Bad</span> und in eine <span class=\"object\">Abstellkammer</span>."
+                     + "<span id=\"5\" class=\"object\">Besteck-</span> und "
+                     + "<span id=\"6\" class=\"object\">Zubehörschublade</span> sowie einem <span id=\"7\" class=\"object\">Regal</span> "
+                     + "für Gläser und Tassen und einem <span id=\"8\" class=\"object\">Geschirrfach</span>. "
+                     + "In der Mitte steht ein <span id=\"9\" class=\"object\">Tisch</span> mit Stühlen. "
+                     + "Auf dem Tisch steht eine <span id=\"10\" class=\"object\">Vase</span>. "
+                     + "Es ist für eine Person <span id=\"11\" class=\"object\">gedeckt</span> worden.",
+               "Objects": {
+                     "1": "Tür",
+                     "2": "Kochfeld",
+                     "3": "Spüle",
+                     "4": "Kühlschrank",
+                     "5": "Besteckschublade",
+                     "6": "Zubehörschublade",
+                     "7": "Regal",
+                     "8": "Geschirrfach",
+                     "9": "Tisch",
+                     "10": "Vase",
+                     "11": "Teller und Tasse"
+                     }
+                  },
+            "flur": {
+               "Description":
+                     "Vom Flur aus gelangt man in die <span id=\"1\" class=\"object\">Küche</span>, das <span id=\"2\" class=\"object\">Schlafzimmer</span>, das <span id=\"3\" class=\"object\">Bad</span> und in eine <span id=\"4\" class=\"object\">Abstellkammer</span>.",
+               "Objects": {
+                     "1": "Küche",
+                     "2": "Schlafzimmer",
+                     "3": "Bad",
+                     "4": "Abstellkammer"
+                     }
+                  }
          };
 
          function wait(seconds) {
@@ -170,12 +222,13 @@
 
          function enterRoom(name) {
             var roomDiv = document.getElementById("room");
-            roomDiv.innerHTML = rooms[name];
+            roomDiv.innerHTML = rooms[name].Description;
+            objectIds = rooms[name].Objects;
 
             var objectDivs = document.getElementsByClassName("object");
             for (var i = 0; i < objectDivs.length; i++) {
                objectDivs[i].onclick = function(e) {
-                                          var text = this.innerHTML;
+                                          var text = objectIds[this.id];
                                           commandParts.push(text);
                                           setCommand();
                                       };
@@ -201,7 +254,7 @@
                   return;
                }
             }
-            if (Object.keys(d).length == 1) {
+            if (Object.keys(d).length == 1 && Object.keys(d)[0] != "*") {
                commandParts.push(Object.keys(d)[0]);
                setCommand();
             }
@@ -219,7 +272,7 @@
 
       </script>
       <div id="dialog" style="min-height:7em; width:30em; margin:auto;"></div>
-      <div id="room" style="border-style:solid; width:30em; min-height:7em; margin:auto;"></div>
+      <div id="room" style="border-style:solid; width:30em; min-height:7em; margin:auto; padding:1em;"></div>
       <div id="command" style="margin:1em; text-align:center;"></div>
       <div style="width:40em; margin:auto;">
       <table style="width:20em; float:left;">
