@@ -83,14 +83,14 @@ TODO:
 
          var commandRules = {
             "Schau an": {
-               "Kühlschrank": [
+               "küche.kühlschrank": [
                   function() { print("Dies ist ein cooler Kühlschrank.");},
                   function() { print("Ok, war ein blöder Spruch.")}
                ],
                "*": [ function() { print("Ich kann nichts besonderes erkennen.") }]
             },
             "Rede mit": {
-               "Tisch": [
+               "küche.tisch": [
                   function() { print("Ich bin Peter Kowalsky, ein mächtiger Seeräuber.");},
                   function() { print("Oh...sieh' mal an! Eine Schatztruhe!");},
                   function() { inventory.push("Schatztruhe"); setInventory(); nextStep();},
@@ -108,17 +108,17 @@ TODO:
                "*": [ function() { print("Ich glaube nicht, dass das funktioniert."); }]
             },
             "Benutze": {
-               "Regal": {
+               "küche.regal": {
                   "mit": {
-                     "Tisch": [function () { print("Was ist das denn für eine blöde Idee?"); }],
+                     "küche.tisch": [function () { print("Was ist das denn für eine blöde Idee?"); }],
                      "*": [ function() { print("Ich weiß nicht wie. "); } ]
                   }
                },
                "*": [function() { print("Das kann ich nicht benutzen."); } ]
             },
             "Gehe zu": {
-               "Tür": [function() { enterRoom("flur"); nextStep(); }],
-               "Küche": [function() { enterRoom("start"); nextStep(); }]
+               "küche.tür": [function() { enterRoom("flur"); nextStep(); }],
+               "flur.küche": [function() { enterRoom("küche"); nextStep(); }]
             },
             "Ziehe": {
                "*": [function() { print("Das kann ich nicht bewegen."); } ] 
@@ -142,43 +142,40 @@ TODO:
          var commandParts = ["Gehe zu"];
          var steps = [];
          var index = 0;
-         var objectIds;
+         var objectIds = {
+                     "küche.tür": "Tür",
+                     "küche.kochfeld": "Kochfeld",
+                     "küche.spüle": "Spüle",
+                     "küche.kühlschrank": "Kühlschrank",
+                     "küche.besteckschublade": "Besteckschublade",
+                     "küche.zubehörschublade": "Zubehörschublade",
+                     "küche.regal": "Regal",
+                     "küche.geschirrfach": "Geschirrfach",
+                     "küche.tisch": "Tisch",
+                     "küche.vase": "Vase",
+                     "küche.teller_und_tasse": "Teller und Tasse",
+                     "flur.küche": "Küche",
+                     "flur.schlafzimmer": "Schlafzimmer",
+                     "flur.bad": "Bad",
+                     "flur.abstellkammer": "Abstellkammer"
+            };
 
          var rooms = {
-            "start": {
+            "küche": {
                "Description":
-                     "In einer Ecke gegenüber der <span id=\"1\" class=\"object\">Tür</span> steht eine kleine Miniküche mit <span id=\"2\" class=\"object\">Kochfeld</span>, "
-                     + "<span id=\"3\" class=\"object\">Spüle</span> und <span id=\"4\" class=\"object\">Kühlschrank</span>. "
+                     "In einer Ecke gegenüber der <span id=\"küche.tür\" class=\"object\">Tür</span> steht eine kleine Miniküche mit <span id=\"küche.kochfeld\" class=\"object\">Kochfeld</span>, "
+                     + "<span id=\"küche.spüle\" class=\"object\">Spüle</span> und <span id=\"küche.kühlschrank\" class=\"object\">Kühlschrank</span>. "
                      + "In der Ecke gegenüber steht ein Küchenschrank mit "
-                     + "<span id=\"5\" class=\"object\">Besteck-</span> und "
-                     + "<span id=\"6\" class=\"object\">Zubehörschublade</span> sowie einem <span id=\"7\" class=\"object\">Regal</span> "
-                     + "für Gläser und Tassen und einem <span id=\"8\" class=\"object\">Geschirrfach</span>. "
-                     + "In der Mitte steht ein <span id=\"9\" class=\"object\">Tisch</span> mit Stühlen. "
-                     + "Auf dem Tisch steht eine <span id=\"10\" class=\"object\">Vase</span>. "
-                     + "Es ist für eine Person <span id=\"11\" class=\"object\">gedeckt</span> worden.",
-               "Objects": {
-                     "1": "Tür",
-                     "2": "Kochfeld",
-                     "3": "Spüle",
-                     "4": "Kühlschrank",
-                     "5": "Besteckschublade",
-                     "6": "Zubehörschublade",
-                     "7": "Regal",
-                     "8": "Geschirrfach",
-                     "9": "Tisch",
-                     "10": "Vase",
-                     "11": "Teller und Tasse"
-                     }
+                     + "<span id=\"küche.besteckschublade\" class=\"object\">Besteck-</span> und "
+                     + "<span id=\"küche.zubehörschublade\" class=\"object\">Zubehörschublade</span> sowie einem <span id=\"küche.regal\" class=\"object\">Regal</span> "
+                     + "für Gläser und Tassen und einem <span id=\"küche.geschirrfach\" class=\"object\">Geschirrfach</span>. "
+                     + "In der Mitte steht ein <span id=\"küche.tisch\" class=\"object\">Tisch</span> mit Stühlen. "
+                     + "Auf dem Tisch steht eine <span id=\"küche.vase\" class=\"object\">Vase</span>. "
+                     + "Es ist für eine Person <span id=\"küche.teller_und_tasse\" class=\"object\">gedeckt</span> worden.",
                   },
             "flur": {
                "Description":
-                     "Vom Flur aus gelangt man in die <span id=\"1\" class=\"object\">Küche</span>, das <span id=\"2\" class=\"object\">Schlafzimmer</span>, das <span id=\"3\" class=\"object\">Bad</span> und in eine <span id=\"4\" class=\"object\">Abstellkammer</span>.",
-               "Objects": {
-                     "1": "Küche",
-                     "2": "Schlafzimmer",
-                     "3": "Bad",
-                     "4": "Abstellkammer"
-                     }
+                     "Vom Flur aus gelangt man in die <span id=\"flur.küche\" class=\"object\">Küche</span>, das <span id=\"flur.schlafzimmer\" class=\"object\">Schlafzimmer</span>, das <span id=\"flur.bad\" class=\"object\">Bad</span> und in eine <span id=\"flur.abstellkammer\" class=\"object\">Abstellkammer</span>.",
                   }
          };
 
@@ -214,7 +211,7 @@ TODO:
                                           setCommand();
                                       };
             }
-            enterRoom("start");
+            enterRoom("küche");
             setInventory();
             clearCommandLine();
             nextStep();
@@ -223,13 +220,13 @@ TODO:
          function enterRoom(name) {
             var roomDiv = document.getElementById("room");
             roomDiv.innerHTML = rooms[name].Description;
-            objectIds = rooms[name].Objects;
+            //objectIds = rooms[name].Objects;
 
             var objectDivs = document.getElementsByClassName("object");
             for (var i = 0; i < objectDivs.length; i++) {
                objectDivs[i].onclick = function(e) {
-                                          var text = objectIds[this.id];
-                                          commandParts.push(text);
+                                          //var text = objectIds[this.id];
+                                          commandParts.push(this.id);
                                           setCommand();
                                       };
             }
@@ -243,7 +240,8 @@ TODO:
 
          function setCommand() {
             var commandDiv = document.getElementById("command");
-            commandDiv.innerHTML = commandParts.join(" ");
+            //Leave verbs but translate substatives (odd index)
+            commandDiv.innerHTML = commandParts.map(function(e, i) {return i % 2 == 0 ? e : objectIds[e]}).join(" ");
             var d = commandRules;
             for (commandIndex = 0; commandIndex < commandParts.length; commandIndex++) {
                d = getValueOrDefault(d, commandParts[commandIndex]);
