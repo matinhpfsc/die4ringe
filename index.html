@@ -203,6 +203,15 @@ TODO:
          }
 
          function init() {
+/*            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+               if (this.readyState == 4 && this.status == 200) {
+                  var o = JSON.parse(this.responseText);
+                  alert(o.field);
+               }
+            };
+            xhttp.open("GET", "game.json", true);
+            xhttp.send();*/
             var verbDivs = document.getElementsByClassName("verb");
             for (var i = 0; i < verbDivs.length; i++) {
                verbDivs[i].onclick = function(e) {
