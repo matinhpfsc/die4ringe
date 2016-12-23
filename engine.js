@@ -200,6 +200,17 @@ var commands = [
     };
     xhttp.open("GET", "game.json", true);
     xhttp.send();*/
+/*
+    alert("Hier steht ein _Häuschen|Haus|QRZ_, das sieht toll aus.".replace(/_(.+)_/g, function(s, p1) {
+      var parts = p1.split("|");
+      var id = "room." +  parts[parts.length - 1];
+      var name = parts[Math.floor(parts.length / 2)];
+      var display = parts[0];
+
+      return "<span id=\"" + id + "\" cname=\"" + name + "\" class=\"object\">" + display + "</span>";
+    }));
+*/
+
     var verbDivs = document.getElementsByClassName("verb");
     for (var i = 0; i < verbDivs.length; i++) {
        verbDivs[i].onclick = function(e) {
@@ -223,7 +234,13 @@ var commands = [
     for (var i = 0; i < objectDivs.length; i++) {
        objectDivs[i].onclick = function(e) {
                                   //var text = objectIds[this.id];
-                                  commandParts.push(this.id);
+                                  var cname = this.getAttribute("cname");
+                                  if (cname == null) {
+                                    commandParts.push({"id":this.id, "name":objectIds[this.id]});
+                                  }
+                                  else {
+                                    commandParts.push({"id":this.id, "name":cname});
+                                  }
                                   setCommand();
                               };
     }
@@ -238,7 +255,7 @@ var commands = [
  function setCommand() {
     var commandDiv = document.getElementById("command");
     //Leave verbs but translate substatives (odd index)
-    commandDiv.innerHTML = commandParts.map(function(e, i) {return i % 2 == 0 ? e : objectIds[e]}).join(" ");
+    commandDiv.innerHTML = commandParts.map(function(e, i) {return i % 2 == 0 ? e : e.name}).join(" ");
     var d = commandRules;
     for (var commandIndex = 0; commandIndex < commandParts.length; commandIndex++) {
        d = getValueOrDefault(d, commandParts[commandIndex]);
@@ -256,6 +273,9 @@ var commands = [
  }
 
  function getValueOrDefault(dict, key) {
+    if (typeof(key) != "string") {
+      key = key["id"];
+    }
     if (key in dict) {
        return  dict[key];
     }
@@ -264,5 +284,3 @@ var commands = [
     }
     return [];
  }
-
-
