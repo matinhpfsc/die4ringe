@@ -71,42 +71,42 @@ var commands = [
 
  var commandRules = {
     "Schau an": {
-       "küche.kühlschrank": [
+       "küche.Kühlschrank": [
           function() { print("Dies ist ein cooler Kühlschrank.");},
           function() { print("Ok, war ein blöder Spruch.")}
        ],
        "*": [ function() { print("Ich kann nichts besonderes erkennen.") }]
     },
     "Rede mit": {
-       "küche.tisch": [
+       "küche.Tisch": [
           function() { print("Ich bin Peter Kowalsky, ein mächtiger Seeräuber.");},
           function() { print("Oh...sieh' mal an! Eine Schatztruhe!");},
-          function() { inventory.push("Schatztruhe"); setInventory(); nextStep();},
+          function() { inventory.push("_Schatztruhe_"); setInventory(); nextStep();},
           function() { wait(1); },
           function() { print("Da wollen wir doch gleich mal sehen, was da darin ist.");},
           function() { print("Ahh, eine Flasche Brause, eine Brille und ein Fisch.");},
-          function() { inventory.push("Brauseflasche");
-                       inventory.push("Brille");
-                       inventory.push("roter Fisch");
+          function() { inventory.push("_Brauseflasche_");
+                       inventory.push("_Brille_");
+                       inventory.push("_roter Fisch_");
                        setInventory(); nextStep();},
           function() { wait(1); },
           function() { print("Die leere Truhe brauche ich ja dann nicht mehr");},
-          function() { inventory.splice(inventory.indexOf("Schatztruhe"), 1); setInventory(); nextStep();}
+          function() { inventory.splice(inventory.indexOf("_Schatztruhe_"), 1); setInventory(); nextStep();}
        ],
        "*": [ function() { print("Ich glaube nicht, dass das funktioniert."); }]
     },
     "Benutze": {
-       "küche.regal": {
+       "küche.Regal": {
           "mit": {
-             "küche.tisch": [function () { print("Was ist das denn für eine blöde Idee?"); }],
+             "küche.Tisch": [function () { print("Was ist das denn für eine blöde Idee?"); }],
              "*": [ function() { print("Ich weiß nicht wie. "); } ]
           }
        },
        "*": [function() { print("Das kann ich nicht benutzen."); } ]
     },
     "Gehe zu": {
-       "küche.tür": [function() { enterRoom("flur"); nextStep(); }],
-       "flur.küche": [function() { enterRoom("küche"); nextStep(); }]
+       "küche.Tür": [function() { enterRoom("flur"); nextStep(); }],
+       "flur.Küche": [function() { enterRoom("küche"); nextStep(); }]
     },
     "Ziehe": {
        "*": [function() { print("Das kann ich nicht bewegen."); } ] 
@@ -130,40 +130,22 @@ var commands = [
  var commandParts = ["Gehe zu"];
  var steps = [];
  var index = 0;
- var objectIds = {
-             "küche.tür": "Tür",
-             "küche.kochfeld": "Kochfeld",
-             "küche.spüle": "Spüle",
-             "küche.kühlschrank": "Kühlschrank",
-             "küche.besteckschublade": "Besteckschublade",
-             "küche.zubehörschublade": "Zubehörschublade",
-             "küche.regal": "Regal",
-             "küche.geschirrfach": "Geschirrfach",
-             "küche.tisch": "Tisch",
-             "küche.vase": "Vase",
-             "küche.teller_und_tasse": "Teller und Tasse",
-             "flur.küche": "Küche",
-             "flur.schlafzimmer": "Schlafzimmer",
-             "flur.bad": "Bad",
-             "flur.abstellkammer": "Abstellkammer"
-    };
-
  var rooms = {
     "küche": {
        "Description":
-             "In einer Ecke gegenüber der <span id=\"küche.tür\" class=\"object\">Tür</span> steht eine kleine Miniküche mit <span id=\"küche.kochfeld\" class=\"object\">Kochfeld</span>, "
-             + "<span id=\"küche.spüle\" class=\"object\">Spüle</span> und <span id=\"küche.kühlschrank\" class=\"object\">Kühlschrank</span>. "
+               "In einer Ecke gegenüber der _Tür_ steht eine kleine Miniküche mit _Kochfeld_, "
+             + "_Spüle_ und _Kühlschrank_. "
              + "In der Ecke gegenüber steht ein Küchenschrank mit "
-             + "<span id=\"küche.besteckschublade\" class=\"object\">Besteck-</span> und "
-             + "<span id=\"küche.zubehörschublade\" class=\"object\">Zubehörschublade</span> sowie einem <span id=\"küche.regal\" class=\"object\">Regal</span> "
-             + "für Gläser und Tassen und einem <span id=\"küche.geschirrfach\" class=\"object\">Geschirrfach</span>. "
-             + "In der Mitte steht ein <span id=\"küche.tisch\" class=\"object\">Tisch</span> mit Stühlen. "
-             + "Auf dem Tisch steht eine <span id=\"küche.vase\" class=\"object\">Vase</span>. "
-             + "Es ist für eine Person <span id=\"küche.teller_und_tasse\" class=\"object\">gedeckt</span> worden.",
+             + "_Besteck-|Besteckschublade_ und "
+             + "_Zubehörschublade_ sowie einem _Regal_ "
+             + "für Gläser und Tassen und einem _Geschirrfach_. "
+             + "In der Mitte steht ein _Tisch_ mit Stühlen. "
+             + "Auf dem Tisch steht eine _Vase_. "
+             + "Es ist für eine Person _gedeckt|Teller und Tasse_ worden."
           },
     "flur": {
        "Description":
-             "Vom Flur aus gelangt man in die <span id=\"flur.küche\" class=\"object\">Küche</span>, das <span id=\"flur.schlafzimmer\" class=\"object\">Schlafzimmer</span>, das <span id=\"flur.bad\" class=\"object\">Bad</span> und in eine <span id=\"flur.abstellkammer\" class=\"object\">Abstellkammer</span>.",
+             "Vom Flur aus gelangt man in die _Küche_, das _Schlafzimmer_, das _Bad_ und in eine _Abstellkammer_."
           }
  };
 
@@ -179,7 +161,8 @@ var commands = [
 
  function setInventory() {
      var inventoryDiv = document.getElementById('inventory');
-     inventoryDiv.innerHTML = inventory.map(function(s) { return '<a href="">' + s + '</a>';}).join("<br/>");
+     inventoryDiv.innerHTML = inventory.map(function(s) { return transform("TODO", s);}).join("<br/>");
+     makeObjectChildrenClickable(inventoryDiv);
  }
 
  function nextStep() {
@@ -188,6 +171,17 @@ var commands = [
        index++;
        step();
     }
+ }
+
+ function transform(roomId, text) {
+ return text.replace(/_([^_]+)_/g, function(s, p1) {
+      var parts = p1.split("|");
+      var id = roomId + "." +  parts[parts.length - 1];
+      var name = parts[Math.floor(parts.length / 2)];
+      var display = parts[0];
+
+      return "<span id=\"" + id + "\" cname=\"" + name + "\" class=\"object\" >" + display + "</span>";
+    });
  }
 
  function init() {
@@ -200,16 +194,6 @@ var commands = [
     };
     xhttp.open("GET", "game.json", true);
     xhttp.send();*/
-/*
-    alert("Hier steht ein _Häuschen|Haus|QRZ_, das sieht toll aus.".replace(/_(.+)_/g, function(s, p1) {
-      var parts = p1.split("|");
-      var id = "room." +  parts[parts.length - 1];
-      var name = parts[Math.floor(parts.length / 2)];
-      var display = parts[0];
-
-      return "<span id=\"" + id + "\" cname=\"" + name + "\" class=\"object\">" + display + "</span>";
-    }));
-*/
 
     var verbDivs = document.getElementsByClassName("verb");
     for (var i = 0; i < verbDivs.length; i++) {
@@ -227,24 +211,22 @@ var commands = [
 
  function enterRoom(name) {
     var roomDiv = document.getElementById("room");
-    roomDiv.innerHTML = rooms[name].Description;
-    //objectIds = rooms[name].Objects;
+    roomDiv.innerHTML = transform(name, rooms[name].Description);
+    makeObjectChildrenClickable(roomDiv);
+}
 
-    var objectDivs = document.getElementsByClassName("object");
+function makeObjectChildrenClickable(element) {
+    var objectDivs = element.getElementsByClassName("object");
     for (var i = 0; i < objectDivs.length; i++) {
-       objectDivs[i].onclick = function(e) {
-                                  //var text = objectIds[this.id];
-                                  var cname = this.getAttribute("cname");
-                                  if (cname == null) {
-                                    commandParts.push({"id":this.id, "name":objectIds[this.id]});
-                                  }
-                                  else {
-                                    commandParts.push({"id":this.id, "name":cname});
-                                  }
-                                  setCommand();
-                              };
+       objectDivs[i].onclick = onObjectClick;
     }
- }
+}
+
+function onObjectClick(e) {
+   var cname = this.getAttribute("cname");
+   commandParts.push({"id":this.id, "name":cname});
+   setCommand();
+}
 
  function clearCommandLine() {
     commandParts = ["Gehe zu"];
