@@ -84,16 +84,21 @@ var commandRules = {
     },
     "Rede mit": {
         "küche.Tisch": [
-            function() { print("Ich bin Peter Kowalsky, ein mächtiger Seeräuber.");},
-            function() { print("Oh...sieh' mal an! Eine Schatztruhe!");},
-            function() { addToInventory("_Schatztruhe_");},
-            function() { wait(1); },
-            function() { print("Da wollen wir doch gleich mal sehen, was darin ist.");},
-            function() { print("Ahh, eine Flasche Brause, eine Brille und ein Fisch.");},
-            function() { addToInventory(["_Brauseflasche_", "_Brille_", "_roter Fisch_"]);},
-            function() { wait(1); },
-            function() { print("Die leere Truhe brauche ich ja dann nicht mehr");},
-            function() { removeFromInventory("_Schatztruhe_");}
+            function() { choose("variable", [0, 1], [[
+                function() { variables['variable'] = 1; },
+                function() { print("Ich bin Peter Kowalsky, ein mächtiger Seeräuber.");},
+                function() { print("Oh...sieh' mal an! Eine Schatztruhe!");},
+                function() { addToInventory("_Schatztruhe_");},
+                function() { wait(1); },
+                function() { print("Da wollen wir doch gleich mal sehen, was darin ist.");},
+                function() { print("Ahh, eine Flasche Brause, eine Brille und ein Fisch.");},
+                function() { addToInventory(["_Brauseflasche_", "_Brille_", "_roter Fisch_"]);},
+                function() { wait(1); },
+                function() { print("Die leere Truhe brauche ich ja dann nicht mehr");},
+                function() { removeFromInventory("_Schatztruhe_");}
+            ], [
+                function() { print("Ich will nicht noch einmal mit dem Tisch reden."); }
+            ]]); },
         ],
         "*": [ function() { print("Ich glaube nicht, dass das funktioniert."); }]
     },
@@ -145,6 +150,23 @@ var commandParts = ["Gehe zu"];
 var steps = [];
 var index = 0;
 var isRunning = false;
+var variables = {};
+
+function choose(variableName, values, functions) {
+    var value = null;
+    if (variableName in variables) {
+        value = variables[variableName];
+    }
+    else {
+        value = 0;
+    }
+    for (var i = 0; i < values.length; i++) {
+        if (value == values[i]) {
+            run(functions[i]);
+            return;
+        }
+    }
+}
 
 function createGameData(text) {
     var lines = text.match(/[^\r\n]+/g);
