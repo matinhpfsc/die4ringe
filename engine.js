@@ -5,7 +5,7 @@ TODO:
 - Dialogs,
 - Removing objects from room,
 - Adding objects to room,
-- Inventory selection,
+- Inventory selection
 */
 var commands = [
     {
@@ -74,76 +74,29 @@ function getStructure(reader) {
     reader.currentLine();
 }
 
-var commandRules = {
-    "Schau an": {
-        "küche.Kühlschrank": [
-            function() { print("Dies ist ein cooler Kühlschrank.");},
-            function() { print("Ok, war ein blöder Spruch.")}
-        ],
-        "*": [ function() { print("Ich kann nichts besonderes erkennen.") }]
-    },
-    "Rede mit": {
-        "küche.Tisch": [
-            function() { choose("variable", [0, 1], [[
-                function() { variables['variable'] = 1; },
-                function() { print("Ich bin Peter Kowalsky, ein mächtiger Seeräuber.");},
-                function() { print("Oh...sieh' mal an! Eine Schatztruhe!");},
-                function() { addToInventory("_Schatztruhe_");},
-                function() { wait(1); },
-                function() { print("Da wollen wir doch gleich mal sehen, was darin ist.");},
-                function() { print("Ahh, eine Flasche Brause, eine Brille und ein Fisch.");},
-                function() { addToInventory(["_Brauseflasche_", "_Brille_", "_roter Fisch_"]);},
-                function() { wait(1); },
-                function() { print("Die leere Truhe brauche ich ja dann nicht mehr");},
-                function() { removeFromInventory("_Schatztruhe_");}
-            ], [
-                function() { print("Ich will nicht noch einmal mit dem Tisch reden."); }
-            ]]); },
-        ],
-        "*": [ function() { print("Ich glaube nicht, dass das funktioniert."); }]
-    },
-    "Benutze": {
-        "küche.Regal": {
-            "mit": {
-                "küche.Tisch": [function () { print("Was ist das denn für eine blöde Idee?"); }],
-                "*": [ function() { print("Ich weiß nicht wie. "); } ]
+var commandRules = {};
+
+function addEvent(roomName, eventText, instructions) {
+    //Change local references to global references
+    eventText = eventText.trim().replace(/_([^_.]*)_/g, "_" + roomName + ".$1_");
+    eventText = eventText.trim().replace(/\*/g, "_$&_");
+    
+    var words = eventText.split("_").map(s => s.trim()).filter(s => s.length > 0);
+    var d = commandRules;
+    for (var i = 0; i < words.length; i++) {
+        if (!(words[i] in d)) {
+            if (i == words.length - 1) {
+                d[words[i]] = instructions;
+                return;
             }
-        },
-        "*": [function() { print("Das kann ich nicht benutzen."); } ]
-    },
-    "Gehe zu": {
-        "küche.Tür": [function() { enterRoom("flur"); }],
-        "flur.Küche": [function() { enterRoom("küche"); }]
-    },
-    "Ziehe": {
-        "*": [function() { print("Das kann ich nicht bewegen."); } ] 
-    },
-    "Drücke": {
-        "*": [function() { print("Das kann ich nicht bewegen."); } ] 
-    },
-    "Nimm": {
-        "*": [function() { print("Das will ich nicht haben."); } ] 
-    },
-    "Gib": {
-        "*": {
-            "an": {
-                "*": [function() { print("Nee."); } ] 
-            }
-        },
-    },
-    "draw": {
-        "küche": [function() { writeDescription("küche", "In einer Ecke gegenüber der _Tür_ steht eine kleine Miniküche mit _Kochfeld_, "
-                + "_Spüle_ und _Kühlschrank_. "
-                + "In der Ecke gegenüber steht ein Küchenschrank mit "
-                + "_Besteck-|Besteckschublade_ und "
-                + "_Zubehörschublade_ sowie einem _Regal_ "
-                + "für Gläser und Tassen und einem _Geschirrfach_. "
-                + "In der Mitte steht ein _Tisch_ mit Stühlen. "
-                + "Auf dem Tisch steht eine _Vase_. "
-                + "Es ist für eine Person _gedeckt|Teller und Tasse_ worden."); } ],
-        "flur": [function() { writeDescription("flur", "Vom Flur aus gelangt man in die _Küche_, das _Schlafzimmer_, das _Bad_ und in eine _Abstellkammer_.") } ]
+            d[words[i]] = {};
+        }
+        d = d[words[i]];
+        if (Array.isArray(d) || i == words.length - 1) {
+            throw "The event '" + words.slice(0, i + 1).join(" ") + "' is already defined.";
+        }
     }
-};
+}
 
 var inventory = [];
 var commandParts = ["Gehe zu"];
@@ -273,6 +226,56 @@ function transform(roomId, text) {
 }
 
 function init() {
+    addEvent("", "Schau an *", [ function() { print("Ich kann nichts besonderes erkennen.") }]);
+    addEvent("", "Ziehe *", [function() { print("Das kann ich nicht bewegen."); }]);
+    addEvent("", "Drücke *", [function() { print("Das kann ich nicht bewegen."); }]);
+    addEvent("", "Nimm *", [function() { print("Das will ich nicht haben."); }]);
+    addEvent("", "Gib * an *", [function() { print("Nee."); }]);
+    addEvent("", "Rede mit *", [function() { print("Hallo?"); }]);
+    addEvent("", "Benutze *", [function() { print("Das kann ich nicht benutzen."); }]);
+    addEvent("", "Öffne *", [function() { print("Das lässt sich nicht öffnen."); }]);
+    addEvent("", "Schließe *", [function() { print("Das lässt sich nicht schließen."); }]);
+
+    
+    
+    addEvent("küche", "Schau an _Kühlschrank_", [
+            function() { print("Dies ist ein cooler Kühlschrank.");},
+            function() { print("Ok, war ein blöder Spruch.")}
+        ]);
+    addEvent("küche", "draw __", [
+            function() { writeDescription("küche", "In einer Ecke gegenüber der _Tür_ steht eine kleine Miniküche mit _Kochfeld_, "
+                + "_Spüle_ und _Kühlschrank_. "
+                + "In der Ecke gegenüber steht ein Küchenschrank mit "
+                + "_Besteck-|Besteckschublade_ und "
+                + "_Zubehörschublade_ sowie einem _Regal_ "
+                + "für Gläser und Tassen und einem _Geschirrfach_. "
+                + "In der Mitte steht ein _Tisch_ mit Stühlen. "
+                + "Auf dem Tisch steht eine _Vase_. "
+                + "Es ist für eine Person _gedeckt|Teller und Tasse_ worden."); } ]);
+    addEvent("flur", "draw __", [
+            function() { writeDescription("flur", "Vom Flur aus gelangt man in die _Küche_, das _Schlafzimmer_, das _Bad_ und in eine _Abstellkammer_.") } ]);
+    addEvent("küche", "Rede mit _Tisch_", [
+            function() { choose("variable", [0, 1], [[
+                function() { variables['variable'] = 1; },
+                function() { print("Ich bin Peter Kowalsky, ein mächtiger Seeräuber.");},
+                function() { print("Oh...sieh' mal an! Eine Schatztruhe!");},
+                function() { addToInventory("_Schatztruhe_");},
+                function() { wait(1); },
+                function() { print("Da wollen wir doch gleich mal sehen, was darin ist.");},
+                function() { print("Ahh, eine Flasche Brause, eine Brille und ein Fisch.");},
+                function() { addToInventory(["_Brauseflasche_", "_Brille_", "_roter Fisch_"]);},
+                function() { wait(1); },
+                function() { print("Die leere Truhe brauche ich ja dann nicht mehr");},
+                function() { removeFromInventory("_Schatztruhe_");}
+            ], [
+                function() { print("Ich will nicht noch einmal mit dem Tisch reden."); }
+            ]]); }]);
+    addEvent("küche", "Benutze _Regal_ mit _Tisch_", [function () { print("Was ist das denn für eine blöde Idee?"); }]);
+    addEvent("küche", "Benutze _Regal_ mit *", [function() { print("Ich weiß nicht wie. "); } ]);
+    addEvent("TODO", "Benutze _Brauseflasche_", [function() { print("Ahh...lecker.") } ]);
+    addEvent("küche", "Gehe zu _Tür_", [function() { enterRoom("flur"); }]);
+    addEvent("flur", "Gehe zu _Küche_", [function() { enterRoom("küche"); }]);
+    
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
@@ -303,6 +306,7 @@ function writeDescription(name, text) {
 function enterRoom(name) {
     if ("draw" in commandRules) {
         var d = commandRules["draw"];
+        name = name + ".";
         if (name in d) {
             d = d[name];
             if (Array.isArray(d)) {
