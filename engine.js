@@ -7,71 +7,47 @@ TODO:
 - Adding objects to room,
 - Inventory selection
 */
-var commands = [
-    {
-        pattern: /say\s+"([^"]*)"(\s+in\s+(#[0-9A-F]{6}))?/g,
-        func: function(groups) {say(groups[3], groups[1]);}
-    }
-];
 
-function createTextReader(text) {
-    var currentIndex = 0;
-    var lines = text.replace(/\r/g, "").split("\n");
-
-    return {
-        currentLine: function() {
-            return currentIndex < lines.length ? lines[currentIndex] : null;
-        },
-        nextLine: function() {
-            if (currentIndex < lines.length) currentIndex++;
-        },
-        lastLine: function() {
-            if (currentIndex > 0) currentIndex--;
-        },
+function Reader(text) {
+    this.lineIndex = 0;
+    this.lines = text.replace(/\r/g, "").split("\n");
+    this.lines = this.lines.filter(l => l.trim().length > 0);  //Remove empty lines
+    //this.lines = this.lines.concat(""); //To close all open blocks
+    this.indentLevelStack = [0];
+    this.currentLine = null;
+    this.getCurrentLine = function() {
+        return this.currentLine;
     };
-}
-
-function getStatement(reader) {
-    var line = reader.currentLine(); 
-    var result;
-    for (command of commands) {
-        result = line.match(command.pattern);
-        if (result != null) {
-            return function() { command.func(result) };
+    this.moveNext = function() {
+        var intentLevel;
+        if (this.lineIndex >= this.lines.length) {
+            this.currentLine = null;
+            intentLevel = 0;
         }
-    }
-    return null;
-}
-
-
-function getIndentLevel(line) {
-    if (line == null) {
-        return -1;
-    }
-    var regex = /^\s*/g;
-    var indent = regex.exec(line);
-    if (indent == null) {
-        return 0;
-    }
-    return indent[0].length;
-}
-
-function getBlockStatements(reader) {
-    var statements = [];
-    if (reader.currentLine() == null) {
-        return statements;
-    }
-    var indentLevel = getIndentLevel(reader.currentLine());
-    while (indentLevel <= getIndentLevel(reader.currentLine())) {
-        statements.push(getStatement(reader));
-        reader.nextLine();
-    }
-    return statements;
-}
-
-function getStructure(reader) {
-    //Room or event
-    reader.currentLine();
+        else {
+            this.currentLine = this.lines[this.lineIndex];
+            intentLevel = /^\s*/g.exec(this.currentLine)[0].length;
+        }
+        
+        if (intentLevel > this.indentLevelStack[this.indentLevelStack.length - 1]) {
+            this.indentLevelStack.push(intentLevel);
+            this.currentLine = "{";
+            return;
+        }
+        if (intentLevel < this.indentLevelStack[this.indentLevelStack.length - 1]) {
+            this.indentLevelStack.pop();
+            if (intentLevel > this.indentLevelStack[this.indentLevelStack.length - 1]) {
+                throw "Intent error."
+            }
+            this.currentLine = "}";
+            return;
+        }
+        if (this.currentLine != null) {
+            this.currentLine = this.currentLine.trim();
+        }
+        this.lineIndex++;
+    };
+    this.moveNext();
 }
 
 var commandRules = {};
@@ -105,6 +81,16 @@ var index = 0;
 var isRunning = false;
 var variables = {};
 
+function choose2(branches) {
+    for (var i = 0; i < branches.length; i++) {
+        var branch = branches[i];
+        if (branch.condition()) {
+            run(branch.instructions);
+            return;
+        }
+    }
+}
+
 function choose(variableName, values, functions) {
     var value = null;
     if (variableName in variables) {
@@ -120,28 +106,9 @@ function choose(variableName, values, functions) {
         }
     }
 }
-
-function createGameData(text) {
-    var lines = text.match(/[^\r\n]+/g);
-    if (lines.length == 0) {
-        return [];
-    }
-    var data = [];
-    var currentBlock = {header: null, indentLevel: 0, parent: null};
-    var indentLevel;
-    for (var i = 0; i < lines.length; i++) {
-        var line = lines[i].trim();
-        var indentLevel = getIndentLevel(line);
-        if (line.endsWith(":")) {
-            data.push({header: line, indentLevel: indentLevel, parent: currentBlock});
-        }
-        else
-        {
-        }
-    }
-    return [];
-}
     
+//------------------------------------------------------
+
 function wait(seconds) {
     waitDuration = 1000 * seconds;
 }
@@ -152,11 +119,11 @@ function print(text) {
     waitDuration = 25 * text.length + 2000;
     steps.splice(index, 0, function() { dialogDiv.innerHTML = ""; } );
 }
-
+/*
 function clearDialog() {
     var dialogDiv =  document.getElementById('dialog');
     dialogDiv.innerHTML = text;
-}
+}*/
 
 function addToInventory(objects) {
     if (!Array.isArray(objects)) {
@@ -173,10 +140,45 @@ function removeFromInventory(objects) {
         objects = [objects]
     }
     for (var i = 0; i < objects.length; i++) {
-        inventory.splice(inventory.indexOf(objects[i]), 1);
+        var index = inventory.indexOf(objects[i]);
+        if (index >= 0) {
+            inventory.splice(index, 1);
+        }
     }
     setInventory();
 }
+
+function writeDescription(name, text) {
+    var roomDiv = document.getElementById("room");
+    roomDiv.innerHTML = transform(name, text);
+    makeObjectChildrenClickable(roomDiv);
+}
+
+function enterRoom(name) {
+    if ("draw" in commandRules) {
+        var d = commandRules["draw"];
+        name = name + ".";
+        if (name in d) {
+            d = d[name];
+            if (Array.isArray(d)) {
+                run(d);
+            }
+        }
+    }
+}
+
+function setVariable(variableName, value) {
+    variables[variableName] = value;
+}
+
+function getVariableValue(variableName) {
+    if (variableName in variables) {
+        return variables[variableName];
+    }
+    return 0;
+}
+
+//--------------------------------------
 
 function setInventory() {
     var inventoryDiv = document.getElementById('inventory');
@@ -225,6 +227,130 @@ function transform(roomId, text) {
     });
 }
 
+function getParsedInstructionBlock(text) {
+    var instructions = [];
+    parseInstructionBlock(new Reader(text), instructions);
+    return instructions;
+}
+
+function parseInstructionBlock(reader, instructions) {
+    if (reader.getCurrentLine() != "{") {
+        throw "Block start expected.";
+    }
+    reader.moveNext();
+    parseInstructionList(reader, instructions);
+    if (reader.getCurrentLine() != "}") {
+        throw "Block end expected.";
+    }
+    reader.moveNext();
+}
+
+function parseInstructionList(reader, instructions) {
+    if (reader.getCurrentLine() == "}") {
+        return;
+    }
+    parseInstruction(reader, instructions);
+    parseInstructionList(reader, instructions);
+}
+
+function parseInstruction(reader, instructions) {
+    var line = reader.getCurrentLine();
+    if (line.startsWith('say')) parsePrint(reader, instructions);
+    else if (line.startsWith('set')) parseSet(reader, instructions);
+    else if (line.startsWith('describe')) parseDescribe(reader, instructions);
+    else if (line.startsWith('wait')) parseWait(reader, instructions);
+    else if (line.startsWith('add')) parseAdd(reader, instructions);
+    else if (line.startsWith('remove')) parseRemove(reader, instructions);
+    else if (line.startsWith('enter')) parseEnter(reader, instructions);
+    else if (line.startsWith('if')) parseIf(reader, instructions);
+    else throw "Parser error: Unknown text in line '" + line + "'";
+}
+
+function parsePrint(reader, instructions) {
+    var line = reader.getCurrentLine();
+    var m = /^say\s+"(.*)"$/g.exec(line);
+    if (m == null) {
+        throw "Parser error: Unknown text in line '" + line + "'";
+    }
+    instructions.push(function() { print(m[1]) });
+    reader.moveNext();
+}
+
+function parseSet(reader, instructions) {
+    var line = reader.getCurrentLine();
+    var m = /^set\s+(\S+)\s+to\s+(\S(.*\S)?)$/g.exec(line);
+    if (m == null) {
+        throw "Parser error: Unknown text in line '" + line + "'";
+    }
+    instructions.push(function() { setVariable(m[1], m[2]) });
+    reader.moveNext();
+}
+
+
+function parseIf(reader, instructions) {
+    var line = reader.getCurrentLine();
+    var m = /^if\s+(\S+)\s+((is|contains)(\s+(not))?)\s+(\S(.*\S)?)\s*:/.exec(line);
+    if (m == null) throw "Parser error: Unknown text in if-line '" + line + "'";
+    var variableName = m[1];
+    var operator = m[2];
+    if (operator != "is") {
+        throw "Other operators than 'is' are not supported now."
+    }
+    var value = m[6];
+    var branchInstructions = [];
+    reader.moveNext();
+    parseInstructionBlock(reader, branchInstructions);
+    var branches = [{ condition: function() { return getVariableValue(variableName) == value;},
+                      instructions: branchInstructions}];
+    parseElIfList(reader, branches);
+    instructions.push(function() { choose2(branches); } );
+}
+
+function parseElIf(reader, branches) {
+    var line = reader.getCurrentLine();
+    var m = /^elif\s+(\S+)\s+(is|contains)(\s+(not))?\s+(\S(.*\S)?)\s*:/.exec(line);
+    if (m == null) throw "Parser error: Unknown text in elif-line '" + line + "'";
+    var variableName = m[1];
+    var operator = m[2];
+    if (operator != "is") {
+        throw "Other operators than 'is' are not supported now."
+    }
+    var value = m[6];
+    var branchInstructions = [];
+    reader.moveNext();
+    parseInstructionBlock(reader, branchInstructions);
+    branches.push({ condition: function() { return getVariableValue(variableName) == value;},
+                      instructions: branchInstructions});
+    parseElIfList(reader, branches);
+}
+
+function parseElse(reader, branches) {
+    var line = reader.getCurrentLine();
+    var m = /^else\s*:/.exec(line);
+    if (m == null) throw "Parser error: Unknown text in else-line '" + line + "'";
+    var branchInstructions = [];
+    reader.moveNext();
+    parseInstructionBlock(reader, branchInstructions);
+    branches.push({ condition: function() { return true;},
+                    instructions: branchInstructions});
+}
+
+function parseElIfList(reader, branches) {
+    var line = reader.getCurrentLine();
+    if (line.startsWith("elif")) {
+        parseElIf(reader, branches);
+    }
+    else if (line.startsWith("else")) {
+        parseElse(reader, branches);
+    }
+}
+
+var CONDITION_WAS_TRUE = 1;
+var CONDITION_WAS_FALSE = 0;
+var GOTO_ENDIF = 2;
+
+var ifStack = []
+
 function init() {
     addEvent("", "Schau an *", [ function() { print("Ich kann nichts besonderes erkennen.") }]);
     addEvent("", "Ziehe *", [function() { print("Das kann ich nicht bewegen."); }]);
@@ -235,13 +361,7 @@ function init() {
     addEvent("", "Benutze *", [function() { print("Das kann ich nicht benutzen."); }]);
     addEvent("", "Öffne *", [function() { print("Das lässt sich nicht öffnen."); }]);
     addEvent("", "Schließe *", [function() { print("Das lässt sich nicht schließen."); }]);
-
     
-    
-    addEvent("küche", "Schau an _Kühlschrank_", [
-            function() { print("Dies ist ein cooler Kühlschrank.");},
-            function() { print("Ok, war ein blöder Spruch.")}
-        ]);
     addEvent("küche", "draw __", [
             function() { writeDescription("küche", "In einer Ecke gegenüber der _Tür_ steht eine kleine Miniküche mit _Kochfeld_, "
                 + "_Spüle_ und _Kühlschrank_. "
@@ -256,7 +376,7 @@ function init() {
             function() { writeDescription("flur", "Vom Flur aus gelangt man in die _Küche_, das _Schlafzimmer_, das _Bad_ und in eine _Abstellkammer_.") } ]);
     addEvent("küche", "Rede mit _Tisch_", [
             function() { choose("variable", [0, 1], [[
-                function() { variables['variable'] = 1; },
+                function() { setVariable('variable',  1); },
                 function() { print("Ich bin Peter Kowalsky, ein mächtiger Seeräuber.");},
                 function() { print("Oh...sieh' mal an! Eine Schatztruhe!");},
                 function() { addToInventory("_Schatztruhe_");},
@@ -275,11 +395,19 @@ function init() {
     addEvent("TODO", "Benutze _Brauseflasche_", [function() { print("Ahh...lecker.") } ]);
     addEvent("küche", "Gehe zu _Tür_", [function() { enterRoom("flur"); }]);
     addEvent("flur", "Gehe zu _Küche_", [function() { enterRoom("küche"); }]);
+    addEvent("küche", "Schau an _Regal_", getParsedInstructionBlock(
+                                            '   say "Hallo Regal."\n'
+                                          + '   if r1 is 0:\n'
+                                          + '       set r1 to 1\n'
+                                          + '       say "Ich sehe dich zum ersten Mal an."\n'
+                                          + '   else:\n'
+                                          + '       say "Ich sehe dich ein weiteres Mal."'
+                                              ));
     
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
-            createGameData(this.responseText);
+            //createGameData(this.responseText);
         }
     };
     xhttp.open("GET", "game.json", true);
@@ -295,25 +423,6 @@ function init() {
     }
     enterRoom("küche");
     clearCommandLine();
-}
-
-function writeDescription(name, text) {
-    var roomDiv = document.getElementById("room");
-    roomDiv.innerHTML = transform(name, text);
-    makeObjectChildrenClickable(roomDiv);
-}
-
-function enterRoom(name) {
-    if ("draw" in commandRules) {
-        var d = commandRules["draw"];
-        name = name + ".";
-        if (name in d) {
-            d = d[name];
-            if (Array.isArray(d)) {
-                run(d);
-            }
-        }
-    }
 }
 
 function makeObjectChildrenClickable(element) {
