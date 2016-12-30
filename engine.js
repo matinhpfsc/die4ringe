@@ -12,7 +12,6 @@ function Reader(text) {
     this.lineIndex = 0;
     this.lines = text.replace(/\r/g, "").split("\n");
     this.lines = this.lines.filter(l => l.trim().length > 0);  //Remove empty lines
-    //this.lines = this.lines.concat(""); //To close all open blocks
     this.indentLevelStack = [0];
     this.currentLine = null;
     this.getCurrentLine = function() {
@@ -81,27 +80,11 @@ var index = 0;
 var isRunning = false;
 var variables = {};
 
-function choose2(branches) {
+function choose(branches) {
     for (var i = 0; i < branches.length; i++) {
         var branch = branches[i];
         if (branch.condition()) {
             run(branch.instructions);
-            return;
-        }
-    }
-}
-
-function choose(variableName, values, functions) {
-    var value = null;
-    if (variableName in variables) {
-        value = variables[variableName];
-    }
-    else {
-        value = 0;
-    }
-    for (var i = 0; i < values.length; i++) {
-        if (value == values[i]) {
-            run(functions[i]);
             return;
         }
     }
@@ -119,11 +102,6 @@ function print(text) {
     waitDuration = 25 * text.length + 2000;
     steps.splice(index, 0, function() { dialogDiv.innerHTML = ""; } );
 }
-/*
-function clearDialog() {
-    var dialogDiv =  document.getElementById('dialog');
-    dialogDiv.innerHTML = text;
-}*/
 
 function addToInventory(objects) {
     if (!Array.isArray(objects)) {
@@ -270,9 +248,19 @@ function parsePrint(reader, instructions) {
     var line = reader.getCurrentLine();
     var m = /^say\s+"(.*)"$/g.exec(line);
     if (m == null) {
-        throw "Parser error: Unknown text in line '" + line + "'";
+        throw "Parser error: Unknown text in print-line '" + line + "'";
     }
     instructions.push(function() { print(m[1]) });
+    reader.moveNext();
+}
+
+function parseEnter(reader, instructions) {
+    var line = reader.getCurrentLine();
+    var m = /^enter\s+"(.*)"$/g.exec(line);
+    if (m == null) {
+        throw "Parser error: Unknown text in enter-line '" + line + "'";
+    }
+    instructions.push(function() { enterRoom(m[1]) });
     reader.moveNext();
 }
 
@@ -280,9 +268,42 @@ function parseSet(reader, instructions) {
     var line = reader.getCurrentLine();
     var m = /^set\s+(\S+)\s+to\s+(\S(.*\S)?)$/g.exec(line);
     if (m == null) {
-        throw "Parser error: Unknown text in line '" + line + "'";
+        throw "Parser error: Unknown text in set-line '" + line + "'";
     }
     instructions.push(function() { setVariable(m[1], m[2]) });
+    reader.moveNext();
+}
+
+function parseAdd(reader, instructions) {
+    var line = reader.getCurrentLine();
+    var m = /^add\s+(.*)\s+to\s+inventory$/g.exec(line);
+    if (m == null) {
+        throw "Parser error: Unknown text in add-line '" + line + "'";
+    }
+    var objects = m[1].split(',').map(s => s.trim());
+    instructions.push(function() { addToInventory(objects); });
+    reader.moveNext();
+}
+
+function parseRemove(reader, instructions) {
+    var line = reader.getCurrentLine();
+    var m = /^remove\s+(.*)\s+from\s+inventory$/g.exec(line);
+    if (m == null) {
+        throw "Parser error: Unknown text in remove-line '" + line + "'";
+    }
+    var objects = m[1].split(',').map(s => s.trim());
+    instructions.push(function() { removeFromInventory(objects); });
+    reader.moveNext();
+}
+
+function parseWait(reader, instructions) {
+    var line = reader.getCurrentLine();
+    var m = /^wait\s+(\d+)\s+seconds?/g.exec(line);
+    if (m == null) {
+        throw "Parser error: Unknown text in wait-line '" + line + "'";
+    }
+    var seconds = parseFloat(m[1]);
+    instructions.push(function() { wait(seconds); });
     reader.moveNext();
 }
 
@@ -303,7 +324,7 @@ function parseIf(reader, instructions) {
     var branches = [{ condition: function() { return getVariableValue(variableName) == value;},
                       instructions: branchInstructions}];
     parseElIfList(reader, branches);
-    instructions.push(function() { choose2(branches); } );
+    instructions.push(function() { choose(branches); } );
 }
 
 function parseElIf(reader, branches) {
@@ -345,22 +366,16 @@ function parseElIfList(reader, branches) {
     }
 }
 
-var CONDITION_WAS_TRUE = 1;
-var CONDITION_WAS_FALSE = 0;
-var GOTO_ENDIF = 2;
-
-var ifStack = []
-
 function init() {
-    addEvent("", "Schau an *", [ function() { print("Ich kann nichts besonderes erkennen.") }]);
-    addEvent("", "Ziehe *", [function() { print("Das kann ich nicht bewegen."); }]);
-    addEvent("", "Drücke *", [function() { print("Das kann ich nicht bewegen."); }]);
-    addEvent("", "Nimm *", [function() { print("Das will ich nicht haben."); }]);
-    addEvent("", "Gib * an *", [function() { print("Nee."); }]);
-    addEvent("", "Rede mit *", [function() { print("Hallo?"); }]);
-    addEvent("", "Benutze *", [function() { print("Das kann ich nicht benutzen."); }]);
-    addEvent("", "Öffne *", [function() { print("Das lässt sich nicht öffnen."); }]);
-    addEvent("", "Schließe *", [function() { print("Das lässt sich nicht schließen."); }]);
+    addEvent("", "Schau an *", getParsedInstructionBlock('   say "Ich kann nichts besonderes erkennen."'));
+    addEvent("", "Ziehe *", getParsedInstructionBlock('   say "Das kann ich nicht bewegen."'));
+    addEvent("", "Drücke *", getParsedInstructionBlock('   say "Das kann ich nicht bewegen."'));
+    addEvent("", "Nimm *", getParsedInstructionBlock('   say "Das will ich nicht haben."'));
+    addEvent("", "Gib * an *", getParsedInstructionBlock('   say "Nee."'));
+    addEvent("", "Rede mit *", getParsedInstructionBlock('   say "Hallo?"'));
+    addEvent("", "Benutze *", getParsedInstructionBlock('   say "Das kann ich nicht benutzen."'));
+    addEvent("", "Öffne *",getParsedInstructionBlock('   say "Das lässt sich nicht öffnen."'));
+    addEvent("", "Schließe *", getParsedInstructionBlock('   say "Das lässt sich nicht schließen."'));
     
     addEvent("küche", "draw __", [
             function() { writeDescription("küche", "In einer Ecke gegenüber der _Tür_ steht eine kleine Miniküche mit _Kochfeld_, "
@@ -374,27 +389,26 @@ function init() {
                 + "Es ist für eine Person _gedeckt|Teller und Tasse_ worden."); } ]);
     addEvent("flur", "draw __", [
             function() { writeDescription("flur", "Vom Flur aus gelangt man in die _Küche_, das _Schlafzimmer_, das _Bad_ und in eine _Abstellkammer_.") } ]);
-    addEvent("küche", "Rede mit _Tisch_", [
-            function() { choose("variable", [0, 1], [[
-                function() { setVariable('variable',  1); },
-                function() { print("Ich bin Peter Kowalsky, ein mächtiger Seeräuber.");},
-                function() { print("Oh...sieh' mal an! Eine Schatztruhe!");},
-                function() { addToInventory("_Schatztruhe_");},
-                function() { wait(1); },
-                function() { print("Da wollen wir doch gleich mal sehen, was darin ist.");},
-                function() { print("Ahh, eine Flasche Brause, eine Brille und ein Fisch.");},
-                function() { addToInventory(["_Brauseflasche_", "_Brille_", "_roter Fisch_"]);},
-                function() { wait(1); },
-                function() { print("Die leere Truhe brauche ich ja dann nicht mehr");},
-                function() { removeFromInventory("_Schatztruhe_");}
-            ], [
-                function() { print("Ich will nicht noch einmal mit dem Tisch reden."); }
-            ]]); }]);
-    addEvent("küche", "Benutze _Regal_ mit _Tisch_", [function () { print("Was ist das denn für eine blöde Idee?"); }]);
-    addEvent("küche", "Benutze _Regal_ mit *", [function() { print("Ich weiß nicht wie. "); } ]);
-    addEvent("TODO", "Benutze _Brauseflasche_", [function() { print("Ahh...lecker.") } ]);
-    addEvent("küche", "Gehe zu _Tür_", [function() { enterRoom("flur"); }]);
-    addEvent("flur", "Gehe zu _Küche_", [function() { enterRoom("küche"); }]);
+    addEvent("küche", "Rede mit _Tisch_", getParsedInstructionBlock(
+                                        '   if var1 is 0:\n'
+                                      + '       set var1 to 1\n'
+                                      + '       say "Ich bin Peter Kowalsky, ein mächtiger Seeräuber."\n'
+                                      + '       say "Oh...sieh\' mal an! Eine Schatztruhe!"\n'
+                                      + '       add _Schatztruhe_ to inventory\n'
+                                      + '       wait 1 second\n'
+                                      + '       say "Da wollen wir doch gleich mal sehen, was darin ist."\n'
+                                      + '       say "Ahh, eine Flasche Brause, eine Brille und ein Fisch."\n'
+                                      + '       add _Brauseflasche_, _Brille_, _roter Fisch_ to inventory\n'
+                                      + '       wait 1 second\n'
+                                      + '       say "Die leere Truhe brauche ich ja dann nicht mehr."\n'
+                                      + '       remove _Schatztruhe_ from inventory\n'
+                                      + '   else:\n'
+                                      + '       say "Ich will nicht noch einmal mit dem Tisch reden."\n'));
+    addEvent("küche", "Benutze _Regal_ mit _Tisch_", getParsedInstructionBlock('   say "Was ist das denn für eine blöde Idee?"'));
+    addEvent("küche", "Benutze _Regal_ mit *", getParsedInstructionBlock('   say "Ich weiß nicht wie. "'));
+    addEvent("TODO", "Benutze _Brauseflasche_", getParsedInstructionBlock('   say "Ahh...lecker."'));
+    addEvent("küche", "Gehe zu _Tür_", getParsedInstructionBlock('   enter "flur"'));
+    addEvent("flur", "Gehe zu _Küche_", getParsedInstructionBlock('   enter "küche"'));
     addEvent("küche", "Schau an _Regal_", getParsedInstructionBlock(
                                             '   say "Hallo Regal."\n'
                                           + '   if r1 is 0:\n'
