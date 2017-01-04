@@ -1,0 +1,74 @@
+room "küche":
+   event "draw __":
+      describe "In einer Ecke gegenüber der _Tür_ steht eine kleine Miniküche mit _Kochfeld_, "
+      describe "_Spüle_ und _Kühlschrank_. "
+      describe "In der Ecke gegenüber steht ein Küchenschrank mit "
+      describe "_Besteck-|Besteckschublade_ und "
+      describe "_Zubehörschublade_ sowie einem _Regal_ "
+      describe "für Gläser und Tassen und einem _Geschirrfach_. "
+      describe "In der Mitte steht ein _Tisch_ mit Stühlen. "
+      describe "Auf dem Tisch steht eine _Vase_. "
+      describe "Es ist für eine Person _gedeckt|Teller und Tasse_ worden."
+                        
+   event "Rede mit _Tisch_":
+      if var1 is 0:
+          set var1 to 1
+          say "Ich bin Peter Kowalsky, ein mächtiger Seeräuber."
+          say "Oh...sieh\' mal an! Eine Schatztruhe!"
+          add _Schatztruhe_ to inventory
+          wait 1 second
+          say "Da wollen wir doch gleich mal sehen, was darin ist."
+          say "Ahh, eine Flasche Brause, eine Brille und ein Fisch."
+          add _Brauseflasche_, _Brille_, _roter Fisch_ to inventory
+          wait 1 second
+          say "Die leere Truhe brauche ich ja dann nicht mehr."
+          remove _Schatztruhe_ from inventory
+      else:
+          say "Ich will nicht noch einmal mit dem Tisch reden."
+                        
+   event "Benutze _Regal_ mit _Tisch_":
+      say "Was ist das denn für eine blöde Idee?"
+                        
+   event "Benutze _Regal_ mit *":
+      say "Ich weiß nicht wie."
+                        
+   event "Gehe zu _Tür_":
+      enter "flur"
+                        
+   event "Schau an _Regal_":
+      say "Hallo Regal."
+      if r1 is 0:
+          set r1 to 1
+          say "Ich sehe dich zum ersten Mal."
+      else:
+          say "Ich sehe dich ein weiteres Mal."
+                        
+   event "Benutze _Brauseflasche_":
+      say "Ahh...lecker."
+
+room "":
+    event "Schau an *":
+        say "Ich kann nichts besonderes erkennen."
+    event "Ziehe *":
+        say "Das kann ich nicht bewegen."
+    event "Drücke *":
+        say "Das kann ich nicht bewegen."
+    event "Nimm *":
+        say "Das will ich nicht haben."
+    event "Gib * an *":
+        say "Nee."
+    event "Rede mit *":
+        say "Hallo?"
+    event "Benutze *":
+        say "Das kann ich nicht benutzen."
+    event "Öffne *":
+        say "Das lässt sich nicht öffnen."
+    event "Schließe *":
+        say "Das lässt sich nicht schließen."
+                            
+room "flur":
+   event "draw __":
+      describe "Vom Flur aus gelangt man in die _Küche_, das _Schlafzimmer_, das _Bad_ und in eine _Abstellkammer_."
+                        
+   event "Gehe zu _Küche_":
+      enter "küche"

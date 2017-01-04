@@ -49,6 +49,38 @@ function Reader(text) {
     this.moveNext();
 }
 
+function ReplaceReader(text) {
+    this.orgReader = new Reader(text);
+    this.getCurrentLine = function() {
+        return this.currentLine;
+    };
+    this.moveNext = function() {
+        this.orgReader.moveNext();
+        this.currentLine = this.getReplacedCurrentLine();
+    };
+    this.parseReplaceList = function() {
+        var line = this.orgReader.getCurrentLine();
+        if (!line.startsWith("replace")) {
+            return [];
+        }
+        var m = /^replace\s+"(.*)"\s+with\s+"(.*)"$/.exec(line.trim());
+        if (m == null) throw "Parser error: Unknown text in replace-line '" + line + "'";
+        var result = [{key: m[1], value:m[2]}];
+        this.orgReader.moveNext();
+        return result.concat(this.parseReplaceList());
+    };
+    this.getReplacedCurrentLine = function() {
+        var line = this.orgReader.getCurrentLine();
+        if (line == null) {
+            return null;
+        }
+        return this.replacePatterns.reduce((l, p) => l.replace(new RegExp(p.key, "g"), p.value), line);
+    }
+    
+    this.replacePatterns = this.parseReplaceList();
+    this.currentLine = this.getReplacedCurrentLine();
+}
+
 var commandRules = {};
 
 function addEvent(roomName, eventText, instructions) {
@@ -79,6 +111,7 @@ var steps = [];
 var index = 0;
 var isRunning = false;
 var variables = {};
+var firstRoom = null;
 
 function choose(branches) {
     for (var i = 0; i < branches.length; i++) {
@@ -225,12 +258,6 @@ function transform(roomId, text) {
     });
 }
 
-function getParsedInstructionBlock(text) {
-    var instructions = [];
-    parseInstructionBlock(new Reader(text), "", instructions);
-    return instructions;
-}
-
 function parseEventBlock(reader, roomName) {
     if (reader.getCurrentLine() != "{") {
         throw "Block start expected.";
@@ -256,6 +283,9 @@ function parseRoom(reader) {
     var m = /^room\s+"(.*)"\s*:/.exec(line);
     if (m == null) throw "Parser error: Unknown text in room-line '" + line + "'";
     var roomName = m[1];
+    if (firstRoom == null) {
+        firstRoom = roomName;
+    }
     reader.moveNext();
     var instructions = [];
     parseEventBlock(reader, roomName, instructions);
@@ -446,102 +476,26 @@ function parseElIfList(reader, roomName, branches) {
 }
 
 function init() {
-    parseRoomList(new Reader(
-                          'room "":\n'
-                        + '    event "Schau an *":\n'
-                        + '        say "Ich kann nichts besonderes erkennen."\n'
-                        + '    event "Ziehe *":\n'
-                        + '        say "Das kann ich nicht bewegen."\n'
-                        + '    event "Drücke *":\n'
-                        + '        say "Das kann ich nicht bewegen."\n'
-                        + '    event "Nimm *":\n'
-                        + '        say "Das will ich nicht haben."\n'
-                        + '    event "Gib * an *":\n'
-                        + '        say "Nee."\n'
-                        + '    event "Rede mit *":\n'
-                        + '        say "Hallo?"\n'
-                        + '    event "Benutze *":\n'
-                        + '        say "Das kann ich nicht benutzen."\n'
-                        + '    event "Öffne *":\n'
-                        + '        say "Das lässt sich nicht öffnen."\n'
-                        + '    event "Schließe *":\n'
-                        + '        say "Das lässt sich nicht schließen."\n'
-    
-                        + 'room "küche":\n'
-                        + '   event "draw __":\n'
-                        + '      describe "In einer Ecke gegenüber der _Tür_ steht eine kleine Miniküche mit _Kochfeld_, "\n'
-                        + '      describe "_Spüle_ und _Kühlschrank_. "\n'
-                        + '      describe "In der Ecke gegenüber steht ein Küchenschrank mit "\n'
-                        + '      describe "_Besteck-|Besteckschublade_ und "\n'
-                        + '      describe "_Zubehörschublade_ sowie einem _Regal_ "\n'
-                        + '      describe "für Gläser und Tassen und einem _Geschirrfach_. "\n'
-                        + '      describe "In der Mitte steht ein _Tisch_ mit Stühlen. "\n'
-                        + '      describe "Auf dem Tisch steht eine _Vase_. "\n'
-                        + '      describe "Es ist für eine Person _gedeckt|Teller und Tasse_ worden."\n'
-                        
-                        + '   event "Rede mit _Tisch_":\n'
-                        + '      if var1 is 0:\n'
-                        + '          set var1 to 1\n'
-                        + '          say "Ich bin Peter Kowalsky, ein mächtiger Seeräuber."\n'
-                        + '          say "Oh...sieh\' mal an! Eine Schatztruhe!"\n'
-                        + '          add _Schatztruhe_ to inventory\n'
-                        + '          wait 1 second\n'
-                        + '          say "Da wollen wir doch gleich mal sehen, was darin ist."\n'
-                        + '          say "Ahh, eine Flasche Brause, eine Brille und ein Fisch."\n'
-                        + '          add _Brauseflasche_, _Brille_, _roter Fisch_ to inventory\n'
-                        + '          wait 1 second\n'
-                        + '          say "Die leere Truhe brauche ich ja dann nicht mehr."\n'
-                        + '          remove _Schatztruhe_ from inventory\n'
-                        + '      else:\n'
-                        + '          say "Ich will nicht noch einmal mit dem Tisch reden."\n'
-                        
-                        + '   event "Benutze _Regal_ mit _Tisch_":\n'
-                        + '      say "Was ist das denn für eine blöde Idee?"\n'
-                        
-                        + '   event "Benutze _Regal_ mit *":\n'
-                        + '      say "Ich weiß nicht wie."\n'
-                        
-                        + '   event "Gehe zu _Tür_":\n'
-                        + '      enter "flur"\n'
-                        
-                        + '   event "Schau an _Regal_":\n'
-                        + '      say "Hallo Regal."\n'
-                        + '      if r1 is 0:\n'
-                        + '          set r1 to 1\n'
-                        + '          say "Ich sehe dich zum ersten Mal."\n'
-                        + '      else:\n'
-                        + '          say "Ich sehe dich ein weiteres Mal."\n'
-                        
-                        + '   event "Benutze _Brauseflasche_":\n'
-                        + '      say "Ahh...lecker."\n'
-                        
-                        + 'room "flur":\n'
-                        + '   event "draw __":\n'
-                        + '      describe "Vom Flur aus gelangt man in die _Küche_, das _Schlafzimmer_, das _Bad_ und in eine _Abstellkammer_."\n'
-                        
-                        + '   event "Gehe zu _Küche_":\n'
-                        + '      enter "küche"\n'
-                ));
-    
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
-            //createGameData(this.responseText);
+            parseRoomList(new ReplaceReader(this.responseText));
+            var verbDivs = document.getElementsByClassName("verb");
+            for (var i = 0; i < verbDivs.length; i++) {
+                verbDivs[i].onclick = function(e) {
+                                            var text = this.innerHTML;
+                                            commandParts = [text];
+                                            setCommand();
+                                        };
+            }
+            if (firstRoom != null) {
+                enterRoom(firstRoom);
+            }
+            clearCommandLine();
         }
     };
-    xhttp.open("GET", "game.json", true);
+    xhttp.open("GET", "game.cta", true);
     xhttp.send();
-    
-    var verbDivs = document.getElementsByClassName("verb");
-    for (var i = 0; i < verbDivs.length; i++) {
-        verbDivs[i].onclick = function(e) {
-                                    var text = this.innerHTML;
-                                    commandParts = [text];
-                                    setCommand();
-                                };
-    }
-    enterRoom("küche");
-    clearCommandLine();
 }
 
 function makeObjectChildrenClickable(element) {
