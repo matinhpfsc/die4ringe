@@ -33,7 +33,7 @@ function addEvent(roomName, eventText, instructions) {
 }
 
 var inventory = [];
-var commandParts = ["Gehe zu"];
+var commandParts = [{id:"Gehe zu", name:"Gehe zu"}];
 var steps = [];
 var index = 0;
 var isRunning = false;
@@ -192,11 +192,7 @@ function init() {
             parseRoomList(new ReplaceReader(this.responseText));
             var verbDivs = document.getElementsByClassName("verb");
             for (var i = 0; i < verbDivs.length; i++) {
-                verbDivs[i].onclick = function(e) {
-                                            var text = this.innerHTML;
-                                            commandParts = [text];
-                                            setCommand();
-                                        };
+                verbDivs[i].onclick = onVerbClick;
             }
             if (firstRoom != null) {
                 enterRoom(firstRoom);
@@ -215,22 +211,27 @@ function makeObjectChildrenClickable(element) {
     }
 }
 
+function onVerbClick(e) {
+    var cname = this.getAttribute("cname");
+    commandParts = [{id:this.id, name:cname}];
+    setCommand();
+}
+
 function onObjectClick(e) {
     var cname = this.getAttribute("cname");
-    commandParts.push({"id":this.id, "name":cname});
+    commandParts.push({id:this.id, name:cname});
     setCommand();
 }
 
 function clearCommandLine() {
-    commandParts = ["Gehe zu"];
-    var commandDiv = document.getElementById("command");
-    commandDiv.innerHTML = commandParts.join(" ");
+    commandParts = [{id:"Gehe zu", name:"Gehe zu"}];
+    setCommand();
 }
 
 function setCommand() {
     var commandDiv = document.getElementById("command");
     //Leave verbs but translate substatives (odd index)
-    commandDiv.innerHTML = commandParts.map(function(e, i) {return i % 2 == 0 ? e : e.name}).join(" ");
+    commandDiv.innerHTML = commandParts.map(function(e, i) {return e.name}).join(" ");
     var d = commandRules;
     for (var commandIndex = 0; commandIndex < commandParts.length; commandIndex++) {
         d = getValueOrDefault(d, commandParts[commandIndex]);
@@ -240,7 +241,7 @@ function setCommand() {
         }
     }
     if (Object.keys(d).length == 1 && Object.keys(d)[0] != "*") {
-        commandParts.push(Object.keys(d)[0]);
+        commandParts.push({id:Object.keys(d)[0], name:Object.keys(d)[0]});
         setCommand();
     }
 }
