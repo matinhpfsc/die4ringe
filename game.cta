@@ -14,7 +14,7 @@ room "küche":
       if var1 is 0:
           set var1 to 1
           say "Ich bin Peter Kowalsky, ein mächtiger Seeräuber."
-          say "Oh...sieh\' mal an! Eine Schatztruhe!"
+          say "Oh...sieh' mal an! Eine Schatztruhe!"
           add _Schatztruhe_ to inventory
           wait 1 second
           say "Da wollen wir doch gleich mal sehen, was darin ist."
